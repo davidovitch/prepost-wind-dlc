@@ -1,0 +1,16 @@
+#!/bin/sh# set the anaconda PATHs
+export PATH=/home/MET/STABCON/miniconda/bin:$PATH
+alias gopython='source activate anaconda'
+
+# activate this environment:
+source activate anaconda
+# add custom libraries to the python path
+export PYTHONPATH=/home/MET/STABCON/repositories/prepost:$PYTHONPATH
+export PYTHONPATH=/home/MET/STABCON/repositories/fatigue_tools:$PYTHONPATH
+
+python /home/MET/STABCON/repositories/prepost/dlcs-launch.py
+
+# deactivate this environment
+source deactivate
+
+

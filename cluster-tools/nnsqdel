@@ -1,0 +1,41 @@
+# nnsqdel user action
+#
+#
+#=======================================================================
+# Generate file with job names
+#=======================================================================
+if [ $2 == list ]
+then
+ rm job-list.dat 2>/dev/null
+ qstat -u $1 | grep $1| cut -c 1-6 >>job-list.dat
+ for i in `cat job-list.dat`
+ do
+   echo adding job $i to file job-list.dat
+ done
+else
+#=======================================================================
+# Delete jobs listed in file job-list.dat
+#=======================================================================
+  if [ $2 == file ]
+  then
+    for i in `cat job-list.dat`
+    do
+      echo canceling job $i
+      qdel $i
+    done
+  fi
+#=======================================================================
+# Delete all user jobs !!!
+#=======================================================================
+  if [ $2 == all ]
+  then
+    rm job-list.dat 2>/dev/null
+    qstat -u $1 | grep $1| cut -c 1-6 >>job-list.dat
+    for i in `cat job-list.dat`
+    do
+      echo canceling job $i
+      qdel $i
+    done
+  fi
+  rm job-list.dat
+fi

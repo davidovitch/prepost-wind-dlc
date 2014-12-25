@@ -1,0 +1,5 @@
+for i in *.bat
+do
+echo $i
+qsub $i
+done

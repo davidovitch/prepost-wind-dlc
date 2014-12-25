@@ -1,0 +1,20 @@
+### Standard Output
+#PBS -N postpro-dlcs.py
+#PBS -o ./pbs_out/launch.out
+### Standard Error
+#PBS -e ./pbs_out/launch.err
+### Maximum wallclock time format HOURS:MINUTES:SECONDS
+#PBS -l walltime=03:00:00
+#PBS -lnodes=1:ppn=1
+### Queue name
+#PBS -q workq
+### Browse to current working dir
+cd $PBS_O_WORKDIR
+pwd
+### run the job
+source /home/MET/STABCON/repositories/cluster-tools/dlcs-launch &
+### wait for jobs to finish
+wait
+exit
+
+### qsub -l walltime=59:00

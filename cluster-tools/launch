@@ -1,0 +1,225 @@
+#!/bin/sh
+# first and crucial check: are we in the pbs directory?
+# check_dir=`pwd`
+
+# Command: launch.sh [sec between jobs (max 59)] [min between jobs (max 59)] [delay of the first job in minutes (max 59)] [delay first job in hours (max 23)]
+echo
+echo "usage: launch [s between jobs] [m between jobs] [delay first job in m] [delay first job in h] [nr launch now]"
+echo "all 5 arguments are mandatory, zero is allowed, s,m max 59, h max 23"
+echo 
+count=`expr 0`
+# d=`date |awk '{print $3}'`
+# h=`date |awk '{print $4}' |cut -c 1-2`
+# m=`date |awk '{print $4}' |cut -c 4-5`
+# m=`expr $m + 5`
+
+d=`date +%d`
+h=`date +%H`
+m=`date +%M`
+# this would mean the initial dealy also counts for launch now
+#m=`expr $m + $3`
+s=`date +%S`
+launch_first=$5
+launch_count=1
+# if the hour is below 0-9, it will output as hh
+# the %k option introduces as space...workaround:
+h=`expr $h + 1`
+h=`expr $h - 1`
+# new line the start time log file:
+echo "-------------------------------------------" >>start_times.log
+
+mkdir pbs_in
+
+# required for the big launch_first
+#-------------------------------------------------------------------------------
+# first make small extra time for the launching (leob: set to 0)
+m=`expr $m + 0`
+
+echo "the time at the start is: " `date`
+echo "start date output format: ddhhmm.ss"
+for i in $(find pbs_in/ -iname "*.p")
+do	
+    
+    # to avoid multiple zeros in the adding zeros to < 9 numbers
+    s=`expr $s + 1`
+    m=`expr $m + 1`
+    h=`expr $h + 1`
+    d=`expr $d + 1`
+    s=`expr $s - 1`
+    m=`expr $m - 1`
+    h=`expr $h - 1`
+    d=`expr $d - 1`
+    
+	# as long as the first launch count is smaller than launch_first, we launch NOW
+	if [ $launch_first -ge $launch_count ]
+	then
+	    # specify the date again for each new case
+	    d=`date +%d`
+        h=`date +%H`
+        m=`date +%M`
+        s=`date +%S`
+        # to avoid multiple zeros in the adding zeros to < 9 numbers
+        s=`expr $s + 1`
+        m=`expr $m + 1`
+        h=`expr $h + 1`
+        d=`expr $d + 1`
+        s=`expr $s - 1`
+        m=`expr $m - 1`
+        h=`expr $h - 1`
+        d=`expr $d - 1`
+	
+        # give 10 seconds between NOW and actual launching
+	    s=`expr $s + 10`
+	    # check boundaries
+        if [ $s -ge 60 ]
+        then
+	        s=`expr $s - 60`
+		    m=`expr $m + 1`
+		fi
+        # check boundaries
+        if [ $m -ge 60 ]
+        then
+            m=`expr $m - 60`
+            h=`expr $h + 1`
+        fi
+
+        #-----------------------------------------------------------------------
+        # put days back to the right output format
+		if [ $d -le 9 ]
+		then
+			d='0'$d
+		fi
+        # put hours back to the right output format
+		if [ $h -le 9 ]
+		then
+		    h='0'$h
+		fi	
+	    # put minutes back to the right output format
+	    if [ $m -le 9 ]
+	    then
+		    m='0'$m
+	    fi
+	    # put seconds back to the right output format
+	    if [ $s -le 9 ]
+	    then
+		    s='0'$s
+	    fi
+        #-----------------------------------------------------------------------
+	    # create the start time in correct format
+	    dt=$d$h$m'.'$s
+	    echo "             start time: " $dt " for " $i
+	    # add to log file
+	    echo "start time: "$dt" for "$i >>start_times.log
+	    sed "s/\[start_time\]/$dt/" $i > tmp.txt
+	    mv tmp.txt $i
+
+	else
+	    #-----------------------------------------------------------------------
+	    # seperate each file standard with specified nr minutes
+	    # only for the second job, for the first job you have the delay
+	    if [ $count = 0 ]
+	    then
+		    m=`expr $m + $3`
+		    h=`expr $h + $4`
+		    # set one higher only once, the initial delay will not be set again
+		    count=`expr $count + 10`
+		
+	    else
+		    s=`expr $s + $1`
+		    m=`expr $m + $2`
+	    fi
+	    #-----------------------------------------------------------------------
+	    # when over 60 seconds, start new minute
+	    if [ $s -ge 60 ]
+	    then
+		    s=`expr $s - 60`
+		    m=`expr $m + 1`
+		    # do it a second time:
+		    if [ $s -ge 60 ]
+            then
+                s=`expr $s - 60`
+		        m=`expr $m + 1`
+		    fi
+	    fi	
+	    #-----------------------------------------------------------------------
+	    # when over 60 min, start new hour
+	    if [ $m -ge 60 ]
+	    then
+		    m=`expr $m - 60`
+		    h=`expr $h + 1`
+		    # do it a second time:
+		    if [ $m -ge 60 ]
+            then
+                m=`expr $m - 60`
+		        h=`expr $h + 1`
+		    fi
+	    fi	
+	    #-----------------------------------------------------------------------
+	    # when h>24, a new day starts
+	    if [ $h -ge 24 ]
+	    then
+		    h=`expr $h - 24`
+		    d=`expr $d + 1`
+		    # do it a second time:
+		    if [ $h -ge 24 ]
+            then
+                h=`expr $h - 24`
+		        d=`expr $d + 1`
+		    fi
+	    fi
+	    #-----------------------------------------------------------------------
+        # put days back to the right output format
+		if [ $d -le 9 ]
+		then
+			d='0'$d
+		fi
+        # put hours back to the right output format
+		if [ $h -le 9 ]
+		then
+		    h='0'$h
+		fi	
+	    # put minutes back to the right output format
+	    if [ $m -le 9 ]
+	    then
+		    m='0'$m
+	    fi
+	    # put seconds back to the right output format
+	    if [ $s -le 9 ]
+	    then
+		    s='0'$s
+	    fi
+	    #-----------------------------------------------------------------------
+	    # create the start time in correct format
+	    dt=$d$h$m'.'$s
+	    echo "             start time: " $dt " for " $i
+	    # add to log file
+	    echo "start time: "$dt" for "$i >>start_times.log
+	    sed "s/\[start_time\]/$dt/" $i > tmp.txt
+	    mv tmp.txt $i
+	fi
+	#---------------------------------------------------------------------------
+	# keep track of the number of jobs launched
+	launch_count=`expr $launch_count + 1`
+	
+	# TODO: final check, if launch time is already in the past, set to NOW + 5sec
+	# and submit straight away to the cluster
+	echo "qsubbing "$i
+	qsub $i
+	# and move to pbs_in
+#	mv $i pbs_in/$i
+done
+echo ""
+echo "the time at the end is: " `date`
+
+## if $5 == "go"
+## then
+## and submit all .p files to the queue
+#mkdir pbs_in
+#for i in *.p
+#do
+#	echo $i
+#	qsub $i
+#	# and remove all the pbs files...
+#	mv $i pbs_in/$i
+#done
+## fi

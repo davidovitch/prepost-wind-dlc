@@ -1,0 +1,11 @@
+if $1 == 
+STAMP=`date +%Y-%m-%d-%H.%M`
+echo $STAMP
+rm -r -r htc/$1
+rm -r pbs_out/$1
+rm -r logfiles/$1
+rm -r results/$1
+STAMP=`date +%Y-%m-%d-%H.%M`
+echo $STAMP
+
+echo "done"

@@ -1,0 +1,15 @@
+# Command: nrun_wait time_sleep [sec]
+count=`expr 0`
+for i in *.bat
+do
+  echo $i
+#  qsub $i
+  count=`expr $count + 1`
+  if [ $count = 20 ]
+  then
+    echo sleeping
+    sleep $1
+#    sleep 10
+    count=`expr 0`
+ fi
+done
