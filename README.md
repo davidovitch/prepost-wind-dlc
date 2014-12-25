@@ -14,3 +14,8 @@ library will be released with proper build, install and usage documentation.
 
 The version that is included in this repository was extensively used within the
 INDUFLAP project.
+
+When referring to this work, please use the following DOI: 10.5281/zenodo.13370
+
+[![DOI](https://zenodo.org/badge/8328/davidovitch/prepost-wind-dlc.svg)](http://dx.doi.org/10.5281/zenodo.13370)
+
