@@ -208,11 +208,11 @@ def local_shell_script(htc_dict, sim_id):
     print('\nrun local shell script written to:')
     print(scriptpath)
 
-def local_windows_script(htc_dict, sim_id, nr_cpus=2):
+def local_windows_script(cases, sim_id, nr_cpus=2):
     """
     """
 
-    tot_cases = len(htc_dict)
+    tot_cases = len(cases)
     i_script = 1
     i_case_script = 1
     cases_per_script = int(math.ceil(float(tot_cases)/float(nr_cpus)))
@@ -225,30 +225,58 @@ def local_windows_script(htc_dict, sim_id, nr_cpus=2):
     header += 'rem\nrem\n'
     footer = ''
     footer += 'rem\nrem\n'
-    footer += 'robocopy .\ .\..\ /e\n'
+    footer += 'cd ..\n'
+    footer += 'robocopy .\_%i_\ /e .\ /move\n'
     footer += 'rem\nrem\n'
     shellscript = header % (i_script, i_script, i_script)
 
     stop = False
 
-    for i_case, case in enumerate(sorted(htc_dict.keys())):
+    for i_case, (cname, case) in enumerate(cases.iteritems()):
+#    for i_case, case in enumerate(sorted(cases.keys())):
+
         shellscript += 'rem\nrem\n'
         shellscript += 'rem ===> Progress: %3i / %3i\n' % (i_case+1, tot_cases)
-        # TODO: copy turbulence from data base, if applicable
+        # copy turbulence from data base, if applicable
+        if case['[turb_db_dir]'] is not None:
+            # we are one dir up in cpu exe dir
+            turb = case['[turb_base_name]'] + '*.bin'
+            dbdir = os.path.join('./../', case['[turb_db_dir]'], turb)
+            dbdir = dbdir.replace('/', '\\')
+            rpl = (dbdir, case['[turb_dir]'].replace('/', '\\'))
+            shellscript += 'copy %s %s\n' % rpl
 
         # get a shorter version for the current cases tag_dict:
-        scriptpath = '%srunall-%i.bat' % (htc_dict[case]['[run_dir]'], i_script)
-        htcpath = htc_dict[case]['[htc_dir]'][:-1] # ditch the /
+        scriptpath = '%srunall-%i.bat' % (case['[run_dir]'], i_script)
+        htcpath = case['[htc_dir]'][:-1] # ditch the /
         try:
-            hawc2_exe = htc_dict[case]['[hawc2_exe]']
+            hawc2_exe = case['[hawc2_exe]']
         except KeyError:
             hawc2_exe = 'hawc2mb.exe'
-        shellscript += "%s %s\\%s\n" % (hawc2_exe, htcpath, case)
-        # TODO: remove turbulence file again, if copied from data base
+        shellscript += "%s .\\%s\\%s\n" % (hawc2_exe, htcpath, cname)
+        # copy back to data base directory if they do not exists there
+        # remove turbulence file again, if copied from data base
+        if case['[turb_db_dir]'] is not None:
+            # copy back if it does not exist in the data base
+            # IF EXIST "c:\test\file.ext"  (move /y "C:\test\file.ext" "C:\quality\" )
+            turbu = case['[turb_base_name]'] + 'u.bin'
+            turbv = case['[turb_base_name]'] + 'v.bin'
+            turbw = case['[turb_base_name]'] + 'w.bin'
+            dbdir = os.path.join('./../', case['[turb_db_dir]'])
+            for tu in (turbu, turbv, turbw):
+                tu_db = os.path.join(dbdir, tu).replace('/', '\\')
+                tu_run = os.path.join(case['[turb_dir]'], tu).replace('/', '\\')
+                rpl = (tu_db, tu_run, dbdir.replace('/', '\\'))
+                shellscript += 'IF EXISTS "%s" move /y "%s" "%s"\n' % rpl
+            # remove turbulence from run dir
+            allturb = os.path.join(case['[turb_dir]'], '*.*')
+            allturb = allturb.replace('/', '\\')
+            # do not prompt for delete confirmation: /Q
+            shellscript += 'del /Q "%s"\n' % allturb
 
         if i_case_script >= cases_per_script:
             # footer: copy all files back
-            shellscript += footer
+            shellscript += footer % i_script
             stop = True
             write_file(scriptpath, shellscript, 'w')
             print('\nrun local shell script written to:')
@@ -257,7 +285,6 @@ def local_windows_script(htc_dict, sim_id, nr_cpus=2):
             # header of the new script, each process has its own copy
             # but only if there are actually jobs left
             if i_case+1 < tot_cases:
-                print('new')
                 i_script += 1
                 i_case_script = 1
                 shellscript = header % (i_script, i_script, i_script)
@@ -267,7 +294,7 @@ def local_windows_script(htc_dict, sim_id, nr_cpus=2):
 
     # we might have missed the footer of a partial script
     if not stop:
-        shellscript += footer
+        shellscript += footer % i_script
         write_file(scriptpath, shellscript, 'w')
         print('\nrun local shell script written to:')
         print(scriptpath)
