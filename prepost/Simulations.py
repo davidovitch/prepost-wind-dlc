@@ -268,7 +268,7 @@ def local_windows_script(cases, sim_id, nr_cpus=2):
                 tu_db = os.path.join(dbdir, tu).replace('/', '\\')
                 tu_run = os.path.join(case['[turb_dir]'], tu).replace('/', '\\')
                 rpl = (tu_db, tu_run, dbdir.replace('/', '\\'))
-                shellscript += 'IF EXISTS "%s" move /y "%s" "%s"\n' % rpl
+                shellscript += 'IF NOT EXIST "%s" move /y "%s" "%s"\n' % rpl
             # remove turbulence from run dir
             allturb = os.path.join(case['[turb_dir]'], '*.*')
             allturb = allturb.replace('/', '\\')
