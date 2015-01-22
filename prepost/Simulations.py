@@ -248,12 +248,13 @@ def local_windows_script(cases, sim_id, nr_cpus=2):
 
         # get a shorter version for the current cases tag_dict:
         scriptpath = '%srunall-%i.bat' % (case['[run_dir]'], i_script)
-        htcpath = case['[htc_dir]'][:-1] # ditch the /
+        htcpath = case['[htc_dir]'][:-1].replace('/', '\\') # ditch the /
         try:
             hawc2_exe = case['[hawc2_exe]']
         except KeyError:
             hawc2_exe = 'hawc2mb.exe'
-        shellscript += "%s .\\%s\\%s\n" % (hawc2_exe, htcpath, cname)
+        rpl = (hawc2_exe.replace('/', '\\'), htcpath, cname.replace('/', '\\'))
+        shellscript += "%s .\\%s\\%s\n" % rpl
         # copy back to data base directory if they do not exists there
         # remove turbulence file again, if copied from data base
         if case['[turb_db_dir]'] is not None:
